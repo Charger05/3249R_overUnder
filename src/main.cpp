@@ -25,8 +25,9 @@ void on_center_button() {
 void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
-
 	pros::lcd::register_btn1_cb(on_center_button);
+	pros::ADIDigitalOut ptoPiston (1);
+
 }
 
 /**
@@ -75,12 +76,12 @@ void autonomous() {}
  */
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor frontLeft(1);
-	pros::Motor ptoFront(2);
+	pros::Motor rearLeft(1);
+	pros::Motor midLeft(5);
+	pros::Motor frontLeft(4);
+	pros::Motor ptoFront(2, true);
 	pros::Motor ptoRear(3);
-	pros::Motor frontRight(4);
-	pros::Motor midRight(5);
-	pros::Motor rearRight(6);
+	pros::Motor rearRight(6, true);
 	pros::Motor intakeMotor(7);
 
 
@@ -88,11 +89,35 @@ void opcontrol() {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
-		int left = master.get_analog(ANALOG_LEFT_Y);
-		int right = master.get_analog(ANALOG_RIGHT_Y);
+		
+		bool pto = true; //true = chassis, false = lift
 
-		left_mtr = left;
-		right_mtr = right;
+		rearLeft.move(master.get_analog(ANALOG_LEFT_Y));
+		midLeft.move(master.get_analog(ANALOG_LEFT_Y));
+	    frontLeft.move(master.get_analog(ANALOG_LEFT_Y));
+		
+		rearRight.move(master.get_analog(ANALOG_RIGHT_Y));
+		
+		if(pto){
+			ptoFront.move(master.get_analog(ANALOG_RIGHT_Y));
+			ptoRear.move(master.get_analog(ANALOG_RIGHT_Y));
+		}
+		else{
+			ptoFront = 0;
+			ptoRear = 0;
+		}
+
+		if(master.get_digital(E_CONTROLLER_DIGITAL_X)){
+			if(pto){
+				pto = false;
+			}
+			else{
+				pto = true;
+			}
+			pros::delay_until(!master.get_digital(E_CONTROLLER_DIGITAL_X));
+		}
+
+
 
 		pros::delay(20);
 	}
