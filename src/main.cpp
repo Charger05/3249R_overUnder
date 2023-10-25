@@ -77,12 +77,14 @@ void autonomous() {}
 void opcontrol() {
 	pros::Controller master(pros::E_CONTROLLER_MASTER);
 	pros::Motor rearLeft(1);
-	pros::Motor midLeft(5);
+	pros::Motor midLeft(5, MOTOR_GEARSET_06);
+	midLeft.set_reversed(true);
 	pros::Motor frontLeft(4);
 	pros::Motor ptoFront(2, true);
 	pros::Motor ptoRear(3);
 	pros::Motor rearRight(6, true);
-	pros::Motor intakeMotor(7);
+	pros::Motor intakeMotor(7, true);
+	pros::Motor cataMotor(8);
 
 
 	while (true) {
@@ -93,8 +95,8 @@ void opcontrol() {
 		bool pto = true; //true = chassis, false = lift
 
 		rearLeft.move(master.get_analog(ANALOG_LEFT_Y));
-		midLeft.move(master.get_analog(ANALOG_LEFT_Y));
-	    frontLeft.move(master.get_analog(ANALOG_LEFT_Y));
+		midLeft.move(master.get_analog(ANALOG_LEFT_Y)/(21/5));
+		frontLeft.move(master.get_analog(ANALOG_LEFT_Y));
 		
 		rearRight.move(master.get_analog(ANALOG_RIGHT_Y));
 		
@@ -107,17 +109,34 @@ void opcontrol() {
 			ptoRear = 0;
 		}
 
-		if(master.get_digital(E_CONTROLLER_DIGITAL_X)){
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
 			if(pto){
 				pto = false;
 			}
 			else{
 				pto = true;
 			}
-			pros::delay_until(!master.get_digital(E_CONTROLLER_DIGITAL_X));
+		}
+		
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_R1)){
+			intakeMotor.move_velocity(200);
+		}
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_R2)){
+			intakeMotor.move_velocity(-200);
+		}
+		else{
+			intakeMotor.move_velocity(0);
 		}
 
-
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
+			cataMotor.move_velocity(200);
+		}
+		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
+			cataMotor.move_velocity(-200);
+		}
+		else{
+			cataMotor.move_velocity(0);
+		}
 
 		pros::delay(20);
 	}
