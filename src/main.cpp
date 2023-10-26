@@ -84,16 +84,17 @@ void opcontrol() {
 	pros::Motor ptoRear(3);
 	pros::Motor rearRight(6, true);
 	pros::Motor intakeMotor(7, true);
-	pros::Motor cataMotor(8);
+	pros::Motor cataMotor(8, true);
 
+	bool pto = true; //true = chassis, false = lift
+	bool cataAdj = false;//false = auto launch, true = manually adjust gear
 
 	while (true) {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
 		
-		bool pto = true; //true = chassis, false = lift
-
+		
 		rearLeft.move(master.get_analog(ANALOG_LEFT_Y));
 		midLeft.move(master.get_analog(ANALOG_LEFT_Y)/(21/5));
 		frontLeft.move(master.get_analog(ANALOG_LEFT_Y));
@@ -128,11 +129,30 @@ void opcontrol() {
 			intakeMotor.move_velocity(0);
 		}
 
-		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
-			cataMotor.move_velocity(200);
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
+			if(!cataAdj){
+				cataAdj = true;
+			}
+			else{
+				cataAdj = false;
+				cataMotor.tare_position();
+			}
+			
 		}
-		else if (master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
-			cataMotor.move_velocity(-200);
+
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
+			//if(!cataAdj){
+				cataMotor.move_absolute(720, 120);
+				while(!((cataMotor.get_position() < 725) && (cataMotor.get_position() > 715))){
+					pros::delay(2);
+				}
+				//cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+				//cataMotor.tare_position();
+			//}
+			//else if(cataAdj){
+				//cataMotor.move_velocity(30);
+			//}
+			
 		}
 		else{
 			cataMotor.move_velocity(0);
