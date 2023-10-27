@@ -86,24 +86,39 @@ void opcontrol() {
 	pros::Motor intakeMotor(7, true);
 	pros::Motor cataMotor(8, true);
 
+	pros::ADIDigitalIn cataButton (2);
+
 	bool pto = true; //true = chassis, false = lift
 	bool cataAdj = false;//false = auto launch, true = manually adjust gear
+	
+	//for chassis controls
+	int power = 0;
+	int turn = 0;
+	int left = 0;
+	int right = 0;
+
+	//for catapult
+	double goPos = 0;
 
 	while (true) {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
 		                 (pros::lcd::read_buttons() & LCD_BTN_CENTER) >> 1,
 		                 (pros::lcd::read_buttons() & LCD_BTN_RIGHT) >> 0);
 		
+		power = master.get_analog(ANALOG_LEFT_Y);
+    	turn = master.get_analog(ANALOG_RIGHT_X);
+		left = power + turn;
+		right = power - turn;
+
+		rearLeft.move(left);
+		midLeft.move(left/(21/5));
+		frontLeft.move(left);
 		
-		rearLeft.move(master.get_analog(ANALOG_LEFT_Y));
-		midLeft.move(master.get_analog(ANALOG_LEFT_Y)/(21/5));
-		frontLeft.move(master.get_analog(ANALOG_LEFT_Y));
-		
-		rearRight.move(master.get_analog(ANALOG_RIGHT_Y));
+		rearRight.move(right);
 		
 		if(pto){
-			ptoFront.move(master.get_analog(ANALOG_RIGHT_Y));
-			ptoRear.move(master.get_analog(ANALOG_RIGHT_Y));
+			ptoFront.move(right);
+			ptoRear.move(right);
 		}
 		else{
 			ptoFront = 0;
@@ -137,25 +152,44 @@ void opcontrol() {
 				cataAdj = false;
 				cataMotor.tare_position();
 			}
-			
+			while(master.get_digital(pros::E_CONTROLLER_DIGITAL_UP)){
+				pros::delay(2);
+			}
 		}
 
 		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
-			//if(!cataAdj){
-				cataMotor.move_absolute(720, 120);
-				while(!((cataMotor.get_position() < 725) && (cataMotor.get_position() > 715))){
-					pros::delay(2);
+			if(!cataAdj){
+				while(!cataButton.get_value()){
+					cataMotor.move_velocity(120);
 				}
-				//cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-				//cataMotor.tare_position();
-			//}
-			//else if(cataAdj){
-				//cataMotor.move_velocity(30);
-			//}
+				cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+				cataMotor.tare_position();
+			}
+			else if(cataAdj){
+				while(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
+					cataMotor.move_velocity(50);
+				}
+				cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			}
 			
 		}
 		else{
 			cataMotor.move_velocity(0);
+		}
+
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
+			if(cataAdj){
+				while(master.get_digital(pros::E_CONTROLLER_DIGITAL_L2)){
+					cataMotor.move_velocity(-50);
+				}
+				cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+			}
+		}
+		else{
+			if(!master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
+				cataMotor.move_velocity(0);
+			}
+			
 		}
 
 		pros::delay(20);
