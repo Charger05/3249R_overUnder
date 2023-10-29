@@ -1,4 +1,5 @@
 #include "main.h"
+#include "display/lv_objx/lv_label.h"
 
 /**
  * A callback function for LLEMU's center button.
@@ -26,7 +27,7 @@ void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
-	pros::ADIDigitalOut ptoPiston (1);
+	pros::ADIDigitalOut flapsPiston (1);
 
 }
 
@@ -59,7 +60,9 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+void autonomous() {
+
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -88,7 +91,13 @@ void opcontrol() {
 
 	pros::ADIDigitalIn cataButton (2);
 
+	//for pto
 	bool pto = true; //true = chassis, false = lift
+	
+	//for wings
+	bool wing = false;//true = expanded, false = retracted
+
+	//for catapult
 	bool cataAdj = false;//false = auto launch, true = manually adjust gear
 	
 	//for chassis controls
@@ -96,9 +105,6 @@ void opcontrol() {
 	int turn = 0;
 	int left = 0;
 	int right = 0;
-
-	//for catapult
-	double goPos = 0;
 
 	while (true) {
 		pros::lcd::print(0, "%d %d %d", (pros::lcd::read_buttons() & LCD_BTN_LEFT) >> 2,
@@ -124,13 +130,31 @@ void opcontrol() {
 			ptoFront = 0;
 			ptoRear = 0;
 		}
-
+		/*
 		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
 			if(pto){
 				pto = false;
 			}
 			else{
 				pto = true;
+			}
+			pros::ADIDigitalOut ptoPiston (#, pto);
+			while(master.get_digital(pros::E_CONTROLLER_DIGITAL_X)){
+				pros::delay(2);
+			}
+		}
+		*/
+		
+		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)){
+			if(wing){
+				wing = false;
+			}
+			else{
+				wing = true;
+			}
+			pros::ADIDigitalOut flapsPiston (1, wing);
+			while(master.get_digital(pros::E_CONTROLLER_DIGITAL_A)){
+				pros::delay(2);
 			}
 		}
 		
@@ -159,9 +183,21 @@ void opcontrol() {
 
 		if(master.get_digital(pros::E_CONTROLLER_DIGITAL_L1)){
 			if(!cataAdj){
+				cataMotor.move_absolute(900, 200);
+				int delay = 0;
+				while(!((cataMotor.get_position() < 905) && (cataMotor.get_position() > 895))){
+					pros::delay(2);
+					delay++;
+					if(delay > 500){
+						break;
+					}
+				}
+				/*
 				while(!cataButton.get_value()){
 					cataMotor.move_velocity(120);
 				}
+				*/
+				
 				cataMotor.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 				cataMotor.tare_position();
 			}
