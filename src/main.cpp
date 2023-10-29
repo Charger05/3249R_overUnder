@@ -61,7 +61,79 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
+	pros::Controller master(pros::E_CONTROLLER_MASTER);
+	pros::Motor rearLeft(1);
+	pros::Motor midLeft(5, MOTOR_GEARSET_06);
+	midLeft.set_reversed(true);
+	pros::Motor frontLeft(4);
+	pros::Motor ptoFront(2, true);
+	pros::Motor ptoRear(3);
+	pros::Motor rearRight(6, true);
+	pros::Motor intakeMotor(7, true);
+	pros::Motor cataMotor(8, true);
 
+	pros::ADIDigitalIn cataButton (2);
+	
+	//Driver Skills
+
+	rearLeft.move_velocity(200);
+	midLeft.move_velocity(600);
+	frontLeft.move_velocity(200);
+	ptoFront.move_velocity(200);
+	ptoRear.move_velocity(200);
+	rearRight.move_velocity(200);
+	pros::delay(2000);
+	rearLeft.move_velocity(-200);
+	midLeft.move_velocity(-600);
+	frontLeft.move_velocity(-200);
+	ptoFront.move_velocity(-200);
+	ptoRear.move_velocity(-200);
+	rearRight.move_velocity(-200);
+	pros::delay(500);
+	rearLeft.move_velocity(0);
+	midLeft.move_velocity(0);
+	frontLeft.move_velocity(0);
+	ptoFront.move_velocity(0);
+	ptoRear.move_velocity(0);
+	rearRight.move_velocity(0);
+	
+	
+	//Auton Skills
+	/*
+	rearLeft.move_velocity(200);
+	midLeft.move_velocity(600);
+	frontLeft.move_velocity(200);
+	ptoFront.move_velocity(200);
+	ptoRear.move_velocity(200);
+	rearRight.move_velocity(200);
+	pros::delay(150);
+	rearLeft.move_velocity(0);
+	midLeft.move_velocity(0);
+	frontLeft.move_velocity(0);
+	ptoFront.move_velocity(0);
+	ptoRear.move_velocity(0);
+	rearRight.move_velocity(0);
+
+	cataMotor.move_velocity(100);
+	pros::delay(30000);
+	cataMotor.move_velocity(0);
+	pros::delay(500);
+	rearLeft.move_velocity(-100);
+	midLeft.move_velocity(-300);
+	frontLeft.move_velocity(-100);
+	ptoFront.move_velocity(-100);
+	ptoRear.move_velocity(-100);
+	rearRight.move_velocity(-100);
+	pros::delay(5000);
+	rearLeft.move_velocity(0);
+	midLeft.move_velocity(0);
+	frontLeft.move_velocity(0);
+	ptoFront.move_velocity(0);
+	ptoRear.move_velocity(0);
+	rearRight.move_velocity(0);
+	*/
+	
+	
 }
 
 /**
