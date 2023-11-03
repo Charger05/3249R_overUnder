@@ -1,5 +1,6 @@
 #include "main.h"
 #include "display/lv_objx/lv_label.h"
+#include "initalize.hpp"
 
 /**
  * A callback function for LLEMU's center button.
@@ -23,13 +24,6 @@ void on_center_button() {
  * All other competition modes are blocked by initialize; it is recommended
  * to keep execution time for this mode under a few seconds.
  */
-void initialize() {
-	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
-	pros::lcd::register_btn1_cb(on_center_button);
-	pros::ADIDigitalOut flapsPiston (1);
-
-}
 
 /**
  * Runs while the robot is in the disabled state of Field Management System or
@@ -49,6 +43,152 @@ void disabled() {}
  */
 void competition_initialize() {}
 
+const double pi = 3.14159265359; // Define the number pi
+const double circum4Omni = 4*pi;
+const double innerCircum = 2*pi*6;//circumference of robot
+const double ratio = 7/5;
+const double botCircum = 2*pi*;//circumference of robot's turning circle
+
+
+void clearChassisRotation(){
+	rearLeft.tare_position();
+	midLeft.tare_position();
+	frontLeft.tare_position();
+	ptoFront.tare_position();
+	ptoRear.tare_position();
+	rearRight.tare_position();
+}
+/*
+moveChassis Function: This function takes a distance, in inches,
+and converts it into a certain angle that the robot's motors will
+rotate to.
+Positive distance = the robot moves forward
+Negative distance = the robot moves backward
+
+Parameters:
+(travel distance in inches, velocity of drive train's left side, velocity of drive train's right side)
+*/
+void moveChassis(double distance, int Vel) {
+  clearChassisRotation(); // Call this function to prevent confusion from a
+                          // previous function.
+  double degGoal = (360 / circum4Omni) * distance; // Creates a variable that stores the degree to
+                             // determine how many times the motors will rotate.
+  double degC = 0; // Creates a variable to store the drivetrain's motor
+                   // positions in degrees.
+  if (degGoal > 0) {
+    // Move the robot forwards while the robot hasn't reached the specified
+    // distance.
+    while (degC < degGoal) {
+      /*
+      1. Calculate the drivetrain's motor positions in degrees by getting the
+      average value of all the drivetrain's motors.
+      2. Store the average value of the drivetrain's motor positions.
+      */
+      degC = (rearLeft.get_position() + (midLeft.get_position()/(21/5))+ frontLeft.get_position() + rearRight.get_position() + ptoRear.get_position() + ptoFront.get_position()) /6;
+      // Each drivetrain motor's values are negated because the motors
+      // are reversed.
+      rearLeft.move_Velocity(Vel);
+      midLeft.move_Velocity(Vel/(21/5));
+	  frontLeft.move_Velocity(Vel);
+	  rearRight.move_Velocity(Vel);
+	  ptoFront.move_Velocity(Vel);
+	  ptoRear.move_Velocity(Vel);
+    }
+  } else if (degGoal < 0) {
+    // Move the robot backwards while the robot hasn't reached the specified
+    // distance.
+    while (degC > degGoal) {
+      // Same calculations that are in the previous while loop.
+      degC = (leftFront.rotation(degrees) + leftRear.rotation(degrees) + (rightFront.rotation(degrees) * -1) + (rightRear.rotation(degrees) * -1)) / 4;
+      // Each drivetrain motor's values are negated because the motors
+      // are reversed.
+      LeftDriveSmart.spin(reverse);
+      RightDriveSmart.spin(forward);
+    }
+  }
+  LeftDriveSmart.stop(brake);
+  RightDriveSmart.stop(brake);
+}
+/*
+This function turns the bot to the right by pivoting it on its right side.
+Positive angle = the robot pivots forward
+Negative angle = the robot pivots backward
+*/
+void pivotRight(double degr) {
+  clearChassisRotation(); // Call this function to prevent confusion from a
+                          // previous function.
+  double distG = (botCircum/ (360*ratio)) * degr; // Creates a variable that stores the distance, in inches, of how
+            // much the robot's left side will have to cover
+  double distC = 0; // Creates a variable to store the distance covered by the
+                    // left side of the drivetrain in inches.
+  if (distG > 0) {
+    // Pivot the robot forwards while the robot hasn't met the desired angle.
+    while (distC < distG) {
+      /*
+      Calculate the distance covered by the left side drivetrain's motors in
+      inches by:
+      1. Retrieving the left front motor's angle, in degrees.
+      2. Converting them into inches.
+      Then:
+      Store the average value of the distance covered by the drivetrain's left
+      side motors.
+      */
+      distC = leftFront.rotation(degrees) * ((circum4Omni) / 360*(ratio)) * 0.845;
+      LeftDriveSmart.spin(forward);
+      RightDriveSmart.stop(brake);
+    }
+  } else if (distG < 0) {
+    // Pivot the robot backwards while the robot hasn't met the desired angle.
+    while (distC > distG) {
+      // Same calculations that are in the above while loop.
+      distC = leftFront.rotation(degrees) * ((circum4Omni) / 360*(ratio)) * 0.845;
+      LeftDriveSmart.spin(reverse);
+      RightDriveSmart.stop(brake);
+    }
+  }
+  LeftDriveSmart.stop(brake);
+  RightDriveSmart.stop(brake);
+}
+
+void rotateRight(double degr) {
+  LeftDriveSmart.setVelocity(50, percent);
+  RightDriveSmart.setVelocity(50, percent);
+  clearChassisRotation(); // Call this function to prevent confusion from a
+                          // previous function.
+  double distG = (innerCircum/ (360*ratio)) * degr; // Creates a variable that stores the distance, in inches, of how
+            // much the robot's left side will have to cover
+  double distC = 0; // Creates a variable to store the distance covered by the
+                    // left side of the drivetrain in inches.
+  if (distG > 0) {
+    // Pivot the robot forwards while the robot hasn't met the desired angle.
+    while (distC < distG) {
+      /*
+      Calculate the distance covered by the left side drivetrain's motors in
+      inches by:
+      1. Retrieving the left front motor's angle, in degrees.
+      2. Converting them into inches.
+      Then:
+      Store the average value of the distance covered by the drivetrain's left
+      side motors.
+      */
+      distC = ((leftFront.rotation(degrees) + rightFront.rotation(degrees))/2) * ((circum4Omni) / 360*(ratio)) * 0.845;
+      LeftDriveSmart.move_Velocity(forward);
+      RightDriveSmart.move_Velocity(forward);//forward = reverse
+    }
+  } else if (distG < 0) {
+    // Pivot the robot backwards while the robot hasn't met the desired angle.
+    while (distC > distG) {
+      // Same calculations that are in the above while loop.
+      distC = ((leftFront.rotation(degrees) + rightFront.rotation(degrees))/2) * ((circum4Omni) / 360*(ratio)) * 0.845;
+      LeftDriveSmart.spin(reverse);
+      RightDriveSmart.spin(reverse);//reverse = forward
+    }
+  }
+  LeftDriveSmart.stop(brake);
+  RightDriveSmart.stop(brake);
+}
+
+
 /**
  * Runs the user autonomous code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -61,19 +201,7 @@ void competition_initialize() {}
  * from where it left off.
  */
 void autonomous() {
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor rearLeft(1);
-	pros::Motor midLeft(5, MOTOR_GEARSET_06);
-	midLeft.set_reversed(true);
-	pros::Motor frontLeft(4);
-	pros::Motor ptoFront(2, true);
-	pros::Motor ptoRear(3);
-	pros::Motor rearRight(6, true);
-	pros::Motor intakeMotor(7, true);
-	pros::Motor cataMotor(8, true);
 
-	pros::ADIDigitalIn cataButton (2);
-	
 	//Driver Skills
 
 	rearLeft.move_velocity(200);
@@ -150,18 +278,6 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	pros::Controller master(pros::E_CONTROLLER_MASTER);
-	pros::Motor rearLeft(1);
-	pros::Motor midLeft(5, MOTOR_GEARSET_06);
-	midLeft.set_reversed(true);
-	pros::Motor frontLeft(4);
-	pros::Motor ptoFront(2, true);
-	pros::Motor ptoRear(3);
-	pros::Motor rearRight(6, true);
-	pros::Motor intakeMotor(7, true);
-	pros::Motor cataMotor(8, true);
-
-	pros::ADIDigitalIn cataButton (2);
 
 	//for pto
 	bool pto = true; //true = chassis, false = lift
